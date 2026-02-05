@@ -73,8 +73,14 @@ def display_play_by_play(play_by_play_data):
 
     print("--- Play-by-Play Data ---")
     for play in play_by_play_data:
-        # Using correct column names from nflreadpy: qtr, time, desc
-        print(f"Q{play.get('qtr')} {play.get('time')} - {play.get('desc')}")
+        # Using correct column names from nflreadpy: ep, qtr, desc
+        ep = play.get("ep")
+        ep_str = f"{ep:6.2f}" if ep is not None else "   N/A"
+
+        qtr = play.get("qtr")
+        qtr_val = int(qtr) if qtr is not None else "?"
+
+        print(f"[{ep_str}] Q{qtr_val} - {play.get('desc')}")
     print("-------------------------")
 
 

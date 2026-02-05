@@ -37,18 +37,18 @@ def get_play_by_play(game_id):
     """
     try:
         # Extract season from game_id (YYYY_WEEK_HOME_AWAY)
-        parts = game_id.split('_')
+        parts = game_id.split("_")
         if not parts or not parts[0].isdigit():
-             print(f"Invalid game ID format: {game_id}")
-             return None
-        
+            print(f"Invalid game ID format: {game_id}")
+            return None
+
         season = int(parts[0])
 
         # Validate game exists using schedules (much faster than loading full PBP)
         print(f"Validating game {game_id} in {season} schedule...")
         schedules = nflreadpy.load_schedules(seasons=[season])
         game_info = schedules.filter(pl.col("game_id") == game_id)
-        
+
         if game_info.is_empty():
             print(f"Game ID {game_id} not found in {season} schedule.")
             return None
@@ -57,15 +57,17 @@ def get_play_by_play(game_id):
         # Note: it does NOT accept game_id directly.
         print(f"Loading play-by-play data for {season} season...")
         df = nflreadpy.load_pbp(seasons=[season])
-        
+
         # Filter for the specific game
         game_plays = df.filter(pl.col("game_id") == game_id)
-        
+
         if game_plays.is_empty():
-            print(f"No plays found for game ID: {game_id} (though it exists in schedule).")
+            print(
+                f"No plays found for game ID: {game_id} (though it exists in schedule)."
+            )
             return None
-            
-        return game_plays.to_dicts() # Return list of dictionaries
+
+        return game_plays.to_dicts()  # Return list of dictionaries
     except Exception as e:
         print(f"Error fetching data for game ID {game_id}: {e}")
         return None

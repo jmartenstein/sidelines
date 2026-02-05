@@ -22,54 +22,13 @@ if not logger.handlers:
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
-# Placeholder for nflreadpy import and its associated functionality
-# In a real scenario, this would be imported if available.
-# For the purpose of this script, we'll simulate its behavior or expect it to be installed.
 try:
-    from nflreadpy import read_game
+    import nflreadpy
+    import polars as pl
 except ImportError:
-    print("Error: The 'nflreadpy' library is not installed.")
-    print("Please install it using: pip install nflreadpy")
-
-    # In a production script, you might want to exit here or handle this more gracefully.
-    # For this example, we'll define dummy functions to allow the script structure to be written.
-    class MockGameData:
-        def __init__(self):
-            self.play_by_play = []
-
-    def read_game(game_id):
-        print(f"Mock read_game called with: {game_id}")
-        # Simulate some data for testing if nflreadpy is not installed
-        if game_id == "2023_01_DET_KC":
-            mock_data = MockGameData()
-            mock_data.play_by_play = [
-                type(
-                    "Play",
-                    (object,),
-                    {"quarter": 1, "time_remaining": "15:00", "text": "Kickoff"},
-                ),
-                type(
-                    "Play",
-                    (object,),
-                    {
-                        "quarter": 1,
-                        "time_remaining": "14:30",
-                        "text": "A team runs a play.",
-                    },
-                ),
-                type(
-                    "Play",
-                    (object,),
-                    {
-                        "quarter": 1,
-                        "time_remaining": "14:00",
-                        "text": "Another team completes a pass.",
-                    },
-                ),
-            ]
-            return mock_data
-        else:
-            raise ValueError(f"Mock data not available for game ID: {game_id}")
+    print("Error: The 'nflreadpy' or 'polars' library is not installed.")
+    print("Please install them using: pip install nflreadpy polars")
+    sys.exit(1)
 
 
 def get_play_by_play(game_id):
@@ -77,10 +36,36 @@ def get_play_by_play(game_id):
     Fetches and returns play-by-play data for a given game ID.
     """
     try:
-        # nflreadpy expects game_id in 'YYYY_MM_TEAM_TEAM' format
-        # Example: 2023_01_DET_KC
-        game_data = read_game(game_id)
-        return game_data.play_by_play
+        # Extract season from game_id (YYYY_WEEK_HOME_AWAY)
+        parts = game_id.split('_')
+        if not parts or not parts[0].isdigit():
+             print(f"Invalid game ID format: {game_id}")
+             return None
+        
+        season = int(parts[0])
+
+        # Validate game exists using schedules (much faster than loading full PBP)
+        print(f"Validating game {game_id} in {season} schedule...")
+        schedules = nflreadpy.load_schedules(seasons=[season])
+        game_info = schedules.filter(pl.col("game_id") == game_id)
+        
+        if game_info.is_empty():
+            print(f"Game ID {game_id} not found in {season} schedule.")
+            return None
+
+        # load_pbp returns a Polars DataFrame for the entire season(s)
+        # Note: it does NOT accept game_id directly.
+        print(f"Loading play-by-play data for {season} season...")
+        df = nflreadpy.load_pbp(seasons=[season])
+        
+        # Filter for the specific game
+        game_plays = df.filter(pl.col("game_id") == game_id)
+        
+        if game_plays.is_empty():
+            print(f"No plays found for game ID: {game_id} (though it exists in schedule).")
+            return None
+            
+        return game_plays.to_dicts() # Return list of dictionaries
     except Exception as e:
         print(f"Error fetching data for game ID {game_id}: {e}")
         return None
@@ -96,7 +81,8 @@ def display_play_by_play(play_by_play_data):
 
     print("--- Play-by-Play Data ---")
     for play in play_by_play_data:
-        print(f"Q{play.quarter} {play.time_remaining} - {play.text}")
+        # Using correct column names from nflreadpy: qtr, time, desc
+        print(f"Q{play.get('qtr')} {play.get('time')} - {play.get('desc')}")
     print("-------------------------")
 
 

@@ -1,14 +1,15 @@
 #!/usr/bin/env zsh
-beans query '{ 
-  beans(filter: { 
-    type: ["task"], 
-    isBlocked: false, 
-    noParent: true, 
-    excludeStatus: ["completed", "scrapped"] 
-  }) { 
-    id 
-    title 
-    priority 
-    status 
-  } 
-}'
+beans query --json '{
+  beans(filter: {
+    type: ["task", "bug", "feature"],
+    excludeStatus: ["completed", "scrapped", "draft"]
+  }) {
+    id
+    title
+    priority
+    status
+    blockedBy(filter: { excludeStatus: ["completed", "scrapped"] }) {
+      id
+    }
+  }
+}' | jq -r '.beans | .[] | select(.blockedBy | length == 0) | "\(.id)\t\(.title) [\(.status)] (priority: \(.priority))"'

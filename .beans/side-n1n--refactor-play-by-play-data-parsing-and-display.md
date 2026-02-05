@@ -1,11 +1,11 @@
 ---
 # side-n1n
 title: Refactor play-by-play data parsing and display
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-05T16:51:16Z
-updated_at: 2026-02-05T16:51:16Z
+updated_at: 2026-02-05T17:34:03Z
 parent: side-yba
 ---
 

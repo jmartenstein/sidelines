@@ -1,11 +1,11 @@
 ---
 # side-nk4
 title: Update nflreadpy API usage in play_by_play.py
-status: todo
+status: completed
 type: task
 priority: high
 created_at: 2026-02-05T16:51:02Z
-updated_at: 2026-02-05T16:51:02Z
+updated_at: 2026-02-05T17:34:14Z
 parent: side-yba
 ---
 

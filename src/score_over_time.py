@@ -1,9 +1,8 @@
 import sys
-import os
 import argparse
+
 import nflreadpy
 import polars as pl
-
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -13,6 +12,7 @@ import matplotlib.pyplot as plt
 
 ### FUNCTIONS ###
 
+
 def get_game_id_and_metadata(target_game_id_str):
     """
     Parses a game ID string (YYYY_WEEK_HOME_AWAY), loads schedules for the season,
@@ -20,11 +20,13 @@ def get_game_id_and_metadata(target_game_id_str):
     Returns (None, None) if the game is not found or an error occurs.
     """
     try:
-        parts = target_game_id_str.split('_')
+        parts = target_game_id_str.split("_")
         if len(parts) != 4:
-            print(f"Invalid game ID format: {target_game_id_str}. Expected YYYY_WEEK_HOME_AWAY.")
+            print(
+                f"Invalid game ID format: {target_game_id_str}. Expected YYYY_WEEK_HOME_AWAY."
+            )
             return None, None
-        
+
         season = int(parts[0])
         week = int(parts[1])
         home_team_abbr = parts[2]
@@ -38,21 +40,21 @@ def get_game_id_and_metadata(target_game_id_str):
         # Note: nflreadpy uses 'home_team' and 'away_team' for abbreviations.
         # The actual game_id column is a 10-digit number.
         game_info_polars = schedules_df.filter(
-            (pl.col("week") == week) &
-            (pl.col("home_team") == home_team_abbr) &
-            (pl.col("away_team") == visitor_team_abbr)
+            (pl.col("game_id") == target_game_id_str)
         )
 
         if game_info_polars.is_empty():
-            print(f"Warning: No game info found for game ID: {target_game_id_str} (Season: {season}, Week: {week}, Home: {home_team_abbr}, Away: {visitor_team_abbr})")
+            print(
+                f"Warning: No game info found for game ID: {target_game_id_str} (Season: {season}, Week: {week}, Home: {home_team_abbr}, Away: {visitor_team_abbr})"
+            )
             return None, None
 
         # Assuming only one game matches these criteria, take the first row
         game_row = game_info_polars.row(0, named=True)
-        
+
         # Extract the 10-digit game_id and convert it to string
-        game_id_10_digit = str(game_row["game_id"]) 
-        
+        game_id_10_digit = str(game_row["game_id"])
+
         # Create a Pandas DataFrame for the metadata, similar to original behavior
         metadata_df = pd.DataFrame([game_row])
 
@@ -61,9 +63,7 @@ def get_game_id_and_metadata(target_game_id_str):
     except (ValueError, IndexError) as e:
         print(f"Error parsing game ID '{target_game_id_str}': {e}")
         return None, None
-    except Exception as e:
-        print(f"Error retrieving game ID and metadata for {target_game_id_str}: {e}")
-        return None, None
+
 
 def get_season_from_game_id(game_id_str):
     """
@@ -72,14 +72,18 @@ def get_season_from_game_id(game_id_str):
     """
     try:
         # Assuming the game_id_str is in the format 'YYYY_...'
-        season = int(game_id_str.split('_')[0])
+        season = int(game_id_str.split("_")[0])
         return season
     except (IndexError, ValueError) as e:
-        print(f"Could not infer season from game ID '{game_id_str}'. Using default 2023. Error: {e}")
-        return 2023 # Defaulting to 2023 season if inference fails
+        print(
+            f"Could not infer season from game ID '{game_id_str}'. Using default 2023. Error: {e}"
+        )
+        return 2023  # Defaulting to 2023 season if inference fails
 
 
-def load_plays_for_game(target_game_id_str, season): # 'season' parameter is no longer strictly needed but kept for signature compatibility
+def load_plays_for_game(
+    target_game_id_str, season
+):  # 'season' parameter is no longer strictly needed but kept for signature compatibility
     """Loads play-by-play data for a specific game using nflreadpy."""
     # Use the helper function to get the 10-digit game_id and metadata
     game_id_10_digit, metadata_df = get_game_id_and_metadata(target_game_id_str)
@@ -88,30 +92,37 @@ def load_plays_for_game(target_game_id_str, season): # 'season' parameter is no 
         # get_game_id_and_metadata already prints warnings/errors
         return pd.DataFrame()
 
-    try:
-        # Load play-by-play data using the 10-digit game_id
-        pbp_df_polars = nflreadpy.load_pbp(game_id=game_id_10_digit)
+    # Corrected: Use 'seasons' parameter and then filter by game_id string
+    pbp_df_polars = nflreadpy.load_pbp(seasons=[season])
 
-        if pbp_df_polars.is_empty():
-            print(f"Warning: No plays found for game ID: {target_game_id_str} (10-digit ID: {game_id_10_digit})")
-            return pd.DataFrame() # Return empty Pandas DataFrame
-
-        return pbp_df_polars.to_pandas() # Convert to Pandas DataFrame for compatibility
-
-    except Exception as e:
-        print(f"Error loading play-by-play data for game {target_game_id_str} (10-digit ID: {game_id_10_digit}): {e}")
+    if pbp_df_polars.is_empty():
+        print(f"Warning: No plays found for season {season}.")
         return pd.DataFrame()
 
+    # Filter the loaded DataFrame for the specific game using the string ID
+    game_plays = pbp_df_polars.filter(pl.col("game_id") == target_game_id_str)
 
-def load_game_info(target_game_id_str, season): # 'season' parameter is no longer strictly needed but kept for signature compatibility if called elsewhere
+    if game_plays.is_empty():
+        print(
+            f"Warning: No plays found for game ID: {target_game_id_str} (10-digit ID: {game_id_10_digit}) after loading season data."
+        )
+        return pd.DataFrame()
+
+    # Convert to Pandas DataFrame via list of dicts to avoid pyarrow dependency
+    return pd.DataFrame(game_plays.to_dicts())
+
+
+def load_game_info(
+    target_game_id_str, season
+):  # 'season' parameter is no longer strictly needed but kept for signature compatibility if called elsewhere
     """Loads game metadata for a specific game using nflreadpy."""
     # Use the helper function to get the 10-digit game_id and metadata
     game_id_10_digit, metadata_df = get_game_id_and_metadata(target_game_id_str)
 
     if metadata_df is None or metadata_df.empty:
         # get_game_id_and_metadata already prints warnings/errors
-        return pd.DataFrame() 
-    
+        return pd.DataFrame()
+
     # The helper function returns the metadata as a Pandas DataFrame
     return metadata_df
 
@@ -129,25 +140,28 @@ def game_clock_to_seconds(clock_str):
     except ValueError:
         return 0
 
+
 def get_sorted_plays(df):
     """Sorts plays chronologically by quarter and clock."""
     # nflreadpy provides 'qtr' (float) and 'game_seconds_remaining' (float) directly.
     # We need to calculate 'game_seconds_elapsed' for plotting consistency.
-    
+
     # Ensure 'qtr' is float for calculation
-    df['qtr'] = df['qtr'].astype(float)
-    
+    df["qtr"] = df["qtr"].astype(float)
+
     # Calculate game seconds elapsed: (quarter - 1) * 900 + (900 - seconds_remaining_in_quarter)
     # Assuming 900 seconds per quarter (15 minutes).
-    df["game_seconds_elapsed"] = (df["qtr"] - 1) * 900 + (900 - df["game_seconds_remaining"])
-    
+    df["game_seconds_elapsed"] = (df["qtr"] - 1) * 900 + (
+        900 - df["game_seconds_remaining"]
+    )
+
     # Sort plays chronologically
     return df.sort_values(by=["qtr", "game_seconds_remaining"], ascending=[True, False])
 
 
 def plot_scores(
     df,
-    target_game_id_str, # Expecting string game ID
+    target_game_id_str,  # Expecting string game ID
     home_team_name,
     visitor_team_name,
     final_home_score,
@@ -155,16 +169,18 @@ def plot_scores(
     output_path=None,
 ):
     """Generates and displays (or saves) a plot of scores and net difference over time."""
-    
+
     # Rename columns for consistency with the original script's logic
-    df = df.rename(columns={
-        "total_home_score": "preSnapHomeScore",
-        "total_away_score": "preSnapVisitorScore",
-        "ep": "expectedPoints",
-        "posteam": "possessionTeam",
-        "qtr": "quarter", # Rename 'qtr' to 'quarter' for consistency
-        # 'game_seconds_remaining' is already used as 'gameClock_seconds' in original plot_scores if needed directly, but we use game_seconds_elapsed
-    })
+    df = df.rename(
+        columns={
+            "total_home_score": "preSnapHomeScore",
+            "total_away_score": "preSnapVisitorScore",
+            "ep": "expectedPoints",
+            "posteam": "possessionTeam",
+            "qtr": "quarter",  # Rename 'qtr' to 'quarter' for consistency
+            # 'game_seconds_remaining' is already used as 'gameClock_seconds' in original plot_scores if needed directly, but we use game_seconds_elapsed
+        }
+    )
 
     # Ensure that the team names used for comparison are consistent.
     # The `home_team_name` and `visitor_team_name` are expected to be abbreviations.
@@ -311,16 +327,18 @@ if __name__ == "__main__":
         description="Plot scores and expected points over time for a specific game."
     )
     # Expecting game_id to be a string in nflverse format, e.g., '2023_01_ARI_WAS'
-    parser.add_argument("game_id", type=str, help="The nflverse game ID (e.g., '2023_01_ARI_WAS').")
+    parser.add_argument(
+        "game_id", type=str, help="The nflverse game ID (e.g., '2023_01_ARI_WAS')."
+    )
     parser.add_argument(
         "-o",
         "--output",
-        help="Path to save the output graph file (e.g., 'output.png'). " +
-             "If not provided, the graph will be displayed.",
+        help="Path to save the output graph file (e.g., 'output.png'). "
+        + "If not provided, the graph will be displayed.",
     )
 
     args = parser.parse_args()
-    game_id_str = args.game_id # This is now expected to be a string
+    game_id_str = args.game_id  # This is now expected to be a string
     output_arg = args.output
 
     # Determine season from game_id_str. This is used for signature compatibility
@@ -338,17 +356,18 @@ if __name__ == "__main__":
     # Extract team names and final scores from game_info DataFrame
     # Use .iloc[0] as filter should return at most one row.
     try:
-        home_team_name = df_game["homeTeamAbbr"].iloc[0]
-        visitor_team_name = df_game["visitorTeamAbbr"].iloc[0]
-        home_final_score = df_game["homeFinalScore"].iloc[0]
-        visitor_final_score = df_game["visitorFinalScore"].iloc[0]
+        home_team_name = df_game["home_team"].iloc[0]
+        visitor_team_name = df_game["away_team"].iloc[0]
+        home_final_score = df_game["home_score"].iloc[0]
+        visitor_final_score = df_game["away_score"].iloc[0]
     except IndexError:
-        print("Error: Could not retrieve team names or scores from game info. Ensure game_id is correct and data is loaded.")
+        print(
+            "Error: Could not retrieve team names or scores from game info. Ensure game_id is correct and data is loaded."
+        )
         sys.exit(1)
     except KeyError as e:
         print(f"Error: Missing expected column in game info: {e}")
         sys.exit(1)
-    
 
     # Load plays for the game
     # The 'season' parameter is passed for signature compatibility, but load_plays_for_game
@@ -357,14 +376,14 @@ if __name__ == "__main__":
     if df_plays_pd.empty:
         # load_plays_for_game (via get_game_id_and_metadata) already prints specific errors/warnings.
         sys.exit(1)
-    
+
     # Sort plays chronologically
     df_sorted = get_sorted_plays(df_plays_pd)
 
     # Generate Plot
     plot_scores(
         df_sorted,
-        game_id_str, # Pass the string game ID for display purposes
+        game_id_str,  # Pass the string game ID for display purposes
         home_team_name,
         visitor_team_name,
         home_final_score,

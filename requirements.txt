@@ -1,5 +1,7 @@
 pandas
 matplotlib
 nflreadpy
+polars
 black
 pylint
+pytest

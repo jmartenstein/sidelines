@@ -12,7 +12,7 @@ parent: side-yba
 Ensure the script handles missing dependencies, empty data returns, and network issues gracefully.
 
 ## Checklist
-- [ ] Validate input arguments.
-- [ ] Add try-except blocks around API calls.
-- [ ] Verify the script works with a real game ID.
-- [ ] Clean up redundant logging and print statements.
+- [x] Validate input arguments.
+- [x] Add try-except blocks around API calls.
+- [x] Verify the script works with a real game ID.
+- [x] Clean up redundant logging and print statements.

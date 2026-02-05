@@ -12,6 +12,6 @@ parent: side-yba
 The script currently attempts to use a non-existent read_game function. This needs to be replaced with nflreadpy.load_pbp.
 
 ## Checklist
-- [ ] Remove MockGameData and simulated read_game logic.
-- [ ] Import nflreadpy correctly.
-- [ ] Update get_play_by_play to call nflreadpy.load_pbp.
+- [x] Remove MockGameData and simulated read_game logic.
+- [x] Import nflreadpy correctly.
+- [x] Update get_play_by_play to call nflreadpy.load_pbp.

@@ -12,7 +12,7 @@ parent: side-yba
 The current display logic assumes play objects with .quarter, .time_remaining, and .text attributes. nflreadpy returns a DataFrame with columns like qtr, time, and desc.
 
 ## Checklist
-- [ ] Update display_play_by_play to iterate over DataFrame rows.
-- [ ] Map qtr to quarter display.
-- [ ] Map time (or game_seconds_remaining) to time display.
-- [ ] Map desc to the play text display.
+- [x] Update display_play_by_play to iterate over DataFrame rows.
+- [x] Map qtr to quarter display.
+- [x] Map time (or game_seconds_remaining) to time display.
+- [x] Map desc to the play text display.

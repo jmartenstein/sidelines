@@ -1,0 +1,14 @@
+#!/usr/bin/env zsh
+beans query '{ 
+  beans(filter: { 
+    type: ["task"], 
+    isBlocked: false, 
+    noParent: true, 
+    excludeStatus: ["completed", "scrapped"] 
+  }) { 
+    id 
+    title 
+    priority 
+    status 
+  } 
+}'

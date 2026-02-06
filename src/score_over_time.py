@@ -169,11 +169,36 @@ def plot_scores(
 ):
     """Generates and displays (or saves) a plot of scores and net difference over time."""
 
+    # Calculate pre-snap scores correctly using posteam_score/defteam_score
+    # This avoids "double counting" on scoring plays where total_home_score includes the points.
+    def get_presnap_home(row):
+        # If posteam matches home, return posteam_score
+        if pd.notna(row["posteam"]) and pd.notna(row["posteam_score"]):
+            if row["posteam"] == home_team_name:
+                return row["posteam_score"]
+            elif row["posteam"] == visitor_team_name:
+                return row["defteam_score"]
+        # Fallback for timeouts, end of quarter, or missing data
+        return row["total_home_score"]
+
+    def get_presnap_visitor(row):
+        # If posteam matches visitor, return posteam_score
+        if pd.notna(row["posteam"]) and pd.notna(row["posteam_score"]):
+            if row["posteam"] == visitor_team_name:
+                return row["posteam_score"]
+            elif row["posteam"] == home_team_name:
+                return row["defteam_score"]
+        # Fallback
+        return row["total_away_score"]
+
+    df["preSnapHomeScore"] = df.apply(get_presnap_home, axis=1)
+    df["preSnapVisitorScore"] = df.apply(get_presnap_visitor, axis=1)
+
     # Rename columns for consistency with the original script's logic
     df = df.rename(
         columns={
-            "total_home_score": "preSnapHomeScore",
-            "total_away_score": "preSnapVisitorScore",
+            # "total_home_score": "preSnapHomeScore", # Now calculated above
+            # "total_away_score": "preSnapVisitorScore", # Now calculated above
             "ep": "expectedPoints",
             "posteam": "possessionTeam",
             "qtr": "quarter",  # Rename 'qtr' to 'quarter' for consistency

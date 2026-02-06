@@ -2,6 +2,7 @@ pandas
 matplotlib
 nflreadpy
 polars
+mplcursors
 black
 pylint
 pytest

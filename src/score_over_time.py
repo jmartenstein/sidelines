@@ -1,10 +1,12 @@
 import sys
 import argparse
+import textwrap
 
 import nflreadpy
 import polars as pl
 import pandas as pd
 import matplotlib.pyplot as plt
+import mplcursors
 
 ### FUNCTIONS ###
 
@@ -182,6 +184,7 @@ def plot_scores(
             # "total_home_score": "preSnapHomeScore", # Now calculated above
             # "total_away_score": "preSnapVisitorScore", # Now calculated above
             "ep": "expectedPoints",
+            "epa": "expectedPointsAdded",
             "posteam": "possessionTeam",
             "qtr": "quarter",  # Rename 'qtr' to 'quarter' for consistency
             # 'game_seconds_remaining' is already used as 'gameClock_seconds' in original plot_scores if needed directly, but we use game_seconds_elapsed
@@ -321,6 +324,54 @@ def plot_scores(
         color="red",
         linewidth=2,
     )
+
+    # Plot play-by-play points for hover
+    plays_with_ep = df.dropna(subset=["expectedPoints"]).copy()
+
+    # Home possession points
+    home_plays = plays_with_ep[plays_with_ep["possessionTeam"] == home_team_name].copy()
+    sc1 = ax1.scatter(
+        home_plays["game_seconds_elapsed"],
+        home_plays["home_expected"],
+        color="blue",
+        s=10,
+        alpha=0.5,
+        label="_nolegend_",
+    )
+
+    # Visitor possession points
+    visitor_plays = plays_with_ep[
+        plays_with_ep["possessionTeam"] == visitor_team_name
+    ].copy()
+    sc2 = ax1.scatter(
+        visitor_plays["game_seconds_elapsed"],
+        visitor_plays["visitor_expected"],
+        color="red",
+        s=10,
+        alpha=0.5,
+        label="_nolegend_",
+    )
+
+    # Add hover functionality
+    cursor = mplcursors.cursor([sc1, sc2], hover=True)
+
+    @cursor.connect("add")
+    def on_add(sel):
+        if sel.artist == sc1:
+            row = home_plays.iloc[sel.index]
+        else:
+            row = visitor_plays.iloc[sel.index]
+
+        ep_val = row["expectedPoints"]
+        epa_val = row.get("expectedPointsAdded", 0.0)
+        desc = row.get("desc", "No description")
+
+        wrapped_desc = "\n".join(textwrap.wrap(str(desc), width=40))
+
+        sel.annotation.set_text(
+            f"EP: {ep_val:.2f}\n" f"EPA: {epa_val:.2f}\n" f"Play: {wrapped_desc}"
+        )
+        sel.annotation.get_bbox_patch().set(fc="white", alpha=0.9)
 
     ax1.set_title(
         f"Score and Expected Points: {visitor_team_name} at {home_team_name} ({target_game_id_str})"

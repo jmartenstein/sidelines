@@ -288,80 +288,68 @@ def plot_scores(
         pos_color, neg_color = "red", "blue"
 
     # Create subplots with shared X axis and different height ratios
+    # Top (ax1) is Net Difference (larger), Bottom (ax2) is Scores (smaller)
     _, (ax1, ax2) = plt.subplots(
         2, 1, figsize=(10, 7), sharex=True, gridspec_kw={"height_ratios": [3, 1]}
     )
 
-    # --- Top Subplot: Scores ---
+    # --- Top Subplot: Net Difference (Winner is Positive) ---
     ax1.step(
         df["game_seconds_elapsed"],
-        df["preSnapHomeScore"],
-        label=f"{home_team_name} Actual",
+        df["net_actual"],
+        label="Actual Diff",
         where="post",
-        color="blue",
-        alpha=0.3,
-    )
-    ax1.step(
-        df["game_seconds_elapsed"],
-        df["preSnapVisitorScore"],
-        label=f"{visitor_team_name} Actual",
-        where="post",
-        color="red",
-        alpha=0.3,
-    )
-
-    ax1.plot(
-        df["game_seconds_elapsed"],
-        df["home_expected"],
-        label=f"{home_team_name} Expected",
-        color="blue",
-        linewidth=2,
+        color="black",
+        alpha=0.2,
     )
     ax1.plot(
         df["game_seconds_elapsed"],
-        df["visitor_expected"],
-        label=f"{visitor_team_name} Expected",
-        color="red",
-        linewidth=2,
+        df["net_expected"],
+        label="Expected Diff",
+        color="purple",
+        linewidth=1.5,
     )
 
-    # Plot play-by-play points for hover
+    ax1.fill_between(
+        df["game_seconds_elapsed"],
+        0,
+        df["net_expected"],
+        where=(df["net_expected"] >= 0),
+        color=pos_color,
+        alpha=0.2,
+        label=f"{pos_team} Lead",
+        interpolate=True,
+    )
+    ax1.fill_between(
+        df["game_seconds_elapsed"],
+        0,
+        df["net_expected"],
+        where=(df["net_expected"] < 0),
+        color=neg_color,
+        alpha=0.2,
+        label=f"{neg_team} Lead",
+        interpolate=True,
+    )
+
+    ax1.axhline(y=0, color="black", linestyle="-", linewidth=1.0)  # Baseline
+
+    # Plot play-by-play points for hover on Net Difference (ax1)
     plays_with_ep = df.dropna(subset=["expectedPoints"]).copy()
-
-    # Home possession points
-    home_plays = plays_with_ep[plays_with_ep["possessionTeam"] == home_team_name].copy()
-    sc1 = ax1.scatter(
-        home_plays["game_seconds_elapsed"],
-        home_plays["home_expected"],
-        color="blue",
-        s=10,
-        alpha=0.5,
-        label="_nolegend_",
-    )
-
-    # Visitor possession points
-    visitor_plays = plays_with_ep[
-        plays_with_ep["possessionTeam"] == visitor_team_name
-    ].copy()
-    sc2 = ax1.scatter(
-        visitor_plays["game_seconds_elapsed"],
-        visitor_plays["visitor_expected"],
-        color="red",
+    sc_net = ax1.scatter(
+        plays_with_ep["game_seconds_elapsed"],
+        plays_with_ep["net_expected"],
+        color="purple",
         s=10,
         alpha=0.5,
         label="_nolegend_",
     )
 
     # Add hover functionality
-    cursor = mplcursors.cursor([sc1, sc2], hover=True)
+    cursor = mplcursors.cursor(sc_net, hover=True)
 
     @cursor.connect("add")
     def on_add(sel):
-        if sel.artist == sc1:
-            row = home_plays.iloc[sel.index]
-        else:
-            row = visitor_plays.iloc[sel.index]
-
+        row = plays_with_ep.iloc[sel.index]
         ep_val = row["expectedPoints"]
         epa_val = row.get("expectedPointsAdded", 0.0)
         desc = row.get("desc", "No description")
@@ -374,55 +362,48 @@ def plot_scores(
         sel.annotation.get_bbox_patch().set(fc="white", alpha=0.9)
 
     ax1.set_title(
-        f"Score and Expected Points: {visitor_team_name} at {home_team_name} ({target_game_id_str})"
+        f"Net Difference and Lead: {visitor_team_name} at {home_team_name} ({target_game_id_str})"
     )
-    ax1.set_ylabel("Points")
-    ax1.legend()
+    ax1.set_ylabel(f"Lead Magnitude\n({pos_team} Lead +)")
+    ax1.legend(loc="upper right", fontsize="x-small")
     ax1.grid(True, linestyle="--", alpha=0.7)
 
-    # --- Bottom Subplot: Net Difference (Winner is Positive) ---
+    # --- Bottom Subplot: Scores ---
     ax2.step(
         df["game_seconds_elapsed"],
-        df["net_actual"],
-        label="Actual Diff",
+        df["preSnapHomeScore"],
+        label=f"{home_team_name} Actual",
         where="post",
-        color="black",
-        alpha=0.2,
+        color="blue",
+        alpha=0.3,
+    )
+    ax2.step(
+        df["game_seconds_elapsed"],
+        df["preSnapVisitorScore"],
+        label=f"{visitor_team_name} Actual",
+        where="post",
+        color="red",
+        alpha=0.3,
+    )
+
+    ax2.plot(
+        df["game_seconds_elapsed"],
+        df["home_expected"],
+        label=f"{home_team_name} Expected",
+        color="blue",
+        linewidth=2,
     )
     ax2.plot(
         df["game_seconds_elapsed"],
-        df["net_expected"],
-        label="Expected Diff",
-        color="purple",
-        linewidth=1.5,
+        df["visitor_expected"],
+        label=f"{visitor_team_name} Expected",
+        color="red",
+        linewidth=2,
     )
 
-    ax2.fill_between(
-        df["game_seconds_elapsed"],
-        0,
-        df["net_expected"],
-        where=(df["net_expected"] >= 0),
-        color=pos_color,
-        alpha=0.2,
-        label=f"{pos_team} Lead",
-        interpolate=True,
-    )
-    ax2.fill_between(
-        df["game_seconds_elapsed"],
-        0,
-        df["net_expected"],
-        where=(df["net_expected"] < 0),
-        color=neg_color,
-        alpha=0.2,
-        label=f"{neg_team} Lead",
-        interpolate=True,
-    )
-
-    ax2.axhline(y=0, color="black", linestyle="-", linewidth=1.0)  # Baseline
-
-    ax2.set_ylabel(f"Lead Magnitude\n({pos_team} Lead +)")
+    ax2.set_ylabel("Points")
     ax2.set_xlabel("Game Seconds Elapsed")
-    ax2.legend(loc="upper right", fontsize="x-small")
+    ax2.legend()
     ax2.grid(True, linestyle="--", alpha=0.7)
 
     # Add vertical lines for quarter breaks to both subplots

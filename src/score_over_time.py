@@ -6,10 +6,6 @@ import polars as pl
 import pandas as pd
 import matplotlib.pyplot as plt
 
-### CONSTANTS ###
-
-# RAW_DATA_DIR = "data/kaggle" # No longer needed with nflreadpy
-
 ### FUNCTIONS ###
 
 
@@ -125,20 +121,6 @@ def load_game_info(
 
     # The helper function returns the metadata as a Pandas DataFrame
     return metadata_df
-
-
-def game_clock_to_seconds(clock_str):
-    """Converts mm:ss to total seconds remaining in quarter."""
-    if pd.isna(clock_str) or not isinstance(clock_str, str):
-        return 0
-    parts = clock_str.split(":")
-    if len(parts) != 2:
-        return 0
-    try:
-        m, s = map(int, parts)
-        return m * 60 + s
-    except ValueError:
-        return 0
 
 
 def get_sorted_plays(df):

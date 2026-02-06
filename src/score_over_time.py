@@ -149,11 +149,9 @@ def get_sorted_plays(df):
     # Ensure 'qtr' is float for calculation
     df["qtr"] = df["qtr"].astype(float)
 
-    # Calculate game seconds elapsed: (quarter - 1) * 900 + (900 - seconds_remaining_in_quarter)
-    # Assuming 900 seconds per quarter (15 minutes).
-    df["game_seconds_elapsed"] = (df["qtr"] - 1) * 900 + (
-        900 - df["game_seconds_remaining"]
-    )
+    # Calculate game seconds elapsed: Total game seconds (3600) - game_seconds_remaining
+    # nflreadpy's game_seconds_remaining is total seconds remaining in the game.
+    df["game_seconds_elapsed"] = 3600 - df["game_seconds_remaining"]
 
     # Sort plays chronologically
     return df.sort_values(by=["qtr", "game_seconds_remaining"], ascending=[True, False])
@@ -167,6 +165,7 @@ def plot_scores(
     final_home_score,
     final_visitor_score,
     output_path=None,
+    debug=False,
 ):
     """Generates and displays (or saves) a plot of scores and net difference over time."""
 
@@ -197,6 +196,74 @@ def plot_scores(
         + (row["expectedPoints"] if row["possessionTeam"] == visitor_team_name else 0),
         axis=1,
     )
+
+    if debug:
+        print("\n--- DEBUG INFO: Data Distribution ---")
+        print(f"Total plays for {target_game_id_str}: {len(df)}")
+
+        # Check for NaNs in critical columns
+        nan_counts = (
+            df[
+                [
+                    "quarter",
+                    "game_seconds_remaining",
+                    "game_seconds_elapsed",
+                    "expectedPoints",
+                ]
+            ]
+            .isna()
+            .sum()
+        )
+        if nan_counts.any():
+            print("\nNaN Counts:")
+            print(nan_counts[nan_counts > 0])
+
+            if nan_counts["expectedPoints"] > 0:
+                print("\nPlays with NaN expectedPoints:")
+                nan_plays = df[df["expectedPoints"].isna()]
+                print(
+                    nan_plays[
+                        ["quarter", "game_seconds_remaining", "possessionTeam", "desc"]
+                    ].head(10)
+                )
+
+        # Summary by Quarter
+        summary = df.groupby("quarter").agg(
+            {
+                "game_seconds_remaining": ["min", "max", "count"],
+                "game_seconds_elapsed": ["min", "max"],
+                "expectedPoints": ["min", "max", "mean"],
+            }
+        )
+        print("\nQuarterly Summary:")
+        print(summary)
+
+        # Check for overlaps or gaps in game_seconds_elapsed
+        print("\nQuarter Transitions (game_seconds_elapsed):")
+        for q in sorted(df["quarter"].unique()):
+            q_data = df[df["quarter"] == q]
+            if not q_data.empty:
+                start = q_data["game_seconds_elapsed"].iloc[0]
+                end = q_data["game_seconds_elapsed"].iloc[-1]
+                print(
+                    f"Q{q}: Range [{start:7.1f}, {end:7.1f}], Duration: {abs(end-start):6.1f}s, Plays: {len(q_data):3d}"
+                )
+
+        print("\nSample Data (First 5 plays):")
+        cols = [
+            "quarter",
+            "game_seconds_remaining",
+            "game_seconds_elapsed",
+            "possessionTeam",
+            "expectedPoints",
+            "home_expected",
+            "visitor_expected",
+        ]
+        print(df[cols].head())
+
+        print("\nSample Data (Last 5 plays):")
+        print(df[cols].tail())
+        print("\n--- END DEBUG INFO ---\n")
 
     # Determine leading team (winner) for the Y-axis reference
     if final_home_score >= final_visitor_score:
@@ -336,10 +403,16 @@ if __name__ == "__main__":
         help="Path to save the output graph file (e.g., 'output.png'). "
         + "If not provided, the graph will be displayed.",
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug logging to investigate data distribution.",
+    )
 
     args = parser.parse_args()
     game_id_str = args.game_id  # This is now expected to be a string
     output_arg = args.output
+    debug_mode = args.debug
 
     # Determine season from game_id_str. This is used for signature compatibility
     # with load_game_info and load_plays_for_game, which now re-parse season internally.
@@ -389,4 +462,5 @@ if __name__ == "__main__":
         home_final_score,
         visitor_final_score,
         output_path=output_arg,
+        debug=debug_mode,
     )

@@ -7,7 +7,6 @@ from src.score_over_time import (
     get_season_from_game_id,
     load_plays_for_game,
     load_game_info,
-    game_clock_to_seconds,
     get_sorted_plays,
     plot_scores,
 )
@@ -17,14 +16,6 @@ def test_get_season_from_game_id():
     assert get_season_from_game_id("2023_01_DET_KC") == 2023
     assert get_season_from_game_id("2024_02_SF_SEA") == 2024
     assert get_season_from_game_id("invalid") == 2023  # Default
-
-
-def test_game_clock_to_seconds():
-    assert game_clock_to_seconds("15:00") == 900
-    assert game_clock_to_seconds("00:00") == 0
-    assert game_clock_to_seconds("08:30") == 510
-    assert game_clock_to_seconds(None) == 0
-    assert game_clock_to_seconds("invalid") == 0
 
 
 @patch("nflreadpy.load_schedules")

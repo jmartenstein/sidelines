@@ -80,7 +80,19 @@ def display_play_by_play(play_by_play_data):
         qtr = play.get("qtr")
         qtr_val = int(qtr) if qtr is not None else "?"
 
-        print(f"[{ep_str}] Q{qtr_val} - {play.get('desc')}")
+        down = play.get("down")
+        down_str = f"{int(down)} & " if down is not None else ""
+        
+        togo = play.get("ydstogo")
+        togo_str = f"{int(togo)} " if togo is not None else ""
+        
+        yrdln = play.get("yrdln")
+        yrdln_str = f"at {yrdln}" if yrdln is not None else ""
+        
+        situation = f"{down_str}{togo_str}{yrdln_str}".strip()
+        situation_str = f"({situation}) " if situation else ""
+
+        print(f"[{ep_str}] Q{qtr_val} - {situation_str}{play.get('desc')}")
     print("-------------------------")
 
 

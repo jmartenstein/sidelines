@@ -55,13 +55,13 @@ def test_display_play_by_play_empty(capsys):
 
 def test_display_play_by_play_with_data(capsys):
     data = [
-        {"qtr": 1, "desc": "Touchdown", "ep": 7.0},
-        {"qtr": 2, "desc": "Field Goal", "ep": 3.0},
+        {"qtr": 1, "desc": "Touchdown", "ep": 7.0, "down": 1, "ydstogo": 10, "yrdln": "KC 10"},
+        {"qtr": 2, "desc": "Field Goal", "ep": 3.0, "down": 4, "ydstogo": 5, "yrdln": "DET 25"},
         {"qtr": None, "desc": "Unknown", "ep": None}
     ]
     display_play_by_play(data)
     captured = capsys.readouterr()
     assert "--- Play-by-Play Data ---" in captured.out
-    assert "[  7.00] Q1 - Touchdown" in captured.out
-    assert "[  3.00] Q2 - Field Goal" in captured.out
+    assert "[  7.00] Q1 - (1 & 10 at KC 10) Touchdown" in captured.out
+    assert "[  3.00] Q2 - (4 & 5 at DET 25) Field Goal" in captured.out
     assert "[   N/A] Q? - Unknown" in captured.out

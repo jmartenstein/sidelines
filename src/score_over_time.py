@@ -187,6 +187,9 @@ def plot_scores(
             "epa": "expectedPointsAdded",
             "posteam": "possessionTeam",
             "qtr": "quarter",  # Rename 'qtr' to 'quarter' for consistency
+            "down": "down",
+            "ydstogo": "yardsToGo",
+            "yrdln": "yardline",
             # 'game_seconds_remaining' is already used as 'gameClock_seconds' in original plot_scores if needed directly, but we use game_seconds_elapsed
         }
     )
@@ -350,16 +353,39 @@ def plot_scores(
     @cursor.connect("add")
     def on_add(sel):
         row = plays_with_ep.iloc[sel.index]
+        qtr = row["quarter"]
+        down = row["down"]
+        togo = row["yardsToGo"]
+        yrdln = row["yardline"]
+        home_score = row["preSnapHomeScore"]
+        visitor_score = row["preSnapVisitorScore"]
         ep_val = row["expectedPoints"]
         epa_val = row.get("expectedPointsAdded", 0.0)
         desc = row.get("desc", "No description")
 
-        wrapped_desc = "\n".join(textwrap.wrap(str(desc), width=40))
+        # Format situation string: "Q1 - 3rd & 10 at KC 25"
+        situation = f"Q{int(qtr)}"
+        if pd.notna(down) and pd.notna(togo):
+            situation += f" - {int(down)} & {int(togo)}"
+        if pd.notna(yrdln):
+            situation += f" at {yrdln}"
 
-        sel.annotation.set_text(
-            f"EP: {ep_val:.2f}\n" f"EPA: {epa_val:.2f}\n" f"Play: {wrapped_desc}"
+        # Format score string: "DET 10 - KC 14"
+        score_str = f"{visitor_team_name} {int(visitor_score)} - {home_team_name} {int(home_score)}"
+
+        wrapped_desc = "\n".join(textwrap.wrap(str(desc), width=45))
+
+        hover_text = (
+            f"{situation}\n"
+            f"Score: {score_str}\n"
+            f"EP: {ep_val:.2f} | EPA: {epa_val:+.2f}\n"
+            f"---------------------------------------------\n"
+            f"{wrapped_desc}"
         )
-        sel.annotation.get_bbox_patch().set(fc="white", alpha=0.9)
+
+        sel.annotation.set_text(hover_text)
+        sel.annotation.get_bbox_patch().set(fc="white", alpha=0.9, boxstyle="round,pad=0.5")
+        sel.annotation.set_fontsize(9)
 
     ax1.set_title(
         f"Net Difference and Lead: {visitor_team_name} at {home_team_name} ({target_game_id_str})"

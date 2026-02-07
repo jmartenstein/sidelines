@@ -1,11 +1,11 @@
 ---
 # side-3df
 title: Update Graph Elements with Team Colors
-status: todo
+status: completed
 type: task
 priority: high
 created_at: 2026-02-07T01:45:17Z
-updated_at: 2026-02-07T01:54:32Z
+updated_at: 2026-02-07T02:13:58Z
 parent: side-0mn
 ---
 
@@ -18,10 +18,10 @@ Update fill_between, step, and plot calls in both subplots to use the assigned t
 4. Ensure the legend labels still correctly identify which color belongs to which team.
 
 ## Checklist
-- [ ] Update ax1 fill colors (Net Difference)
-- [ ] Update ax2 line and step colors (Scores)
-- [ ] Ensure consistent color usage across both subplots
-- [ ] Verify legend accuracy
+- [x] Update ax1 fill colors (Net Difference)
+- [x] Update ax2 line and step colors (Scores)
+- [x] Ensure consistent color usage across both subplots
+- [x] Verify legend accuracy
 
 ## Acceptance Criteria
 - The 'Net Difference' subplot (ax1) fills use the leading team's color.

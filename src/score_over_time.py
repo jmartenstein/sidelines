@@ -455,11 +455,9 @@ def plot_scores(
         wrapped_desc = "\n".join(textwrap.wrap(str(desc), width=45))
 
         hover_text = (
-            f"{situation}\n"
-            f"Score: {score_str}\n"
+            f"{situation} | {score_str}\n\n"
+            f"{wrapped_desc}\n\n"
             f"EP: {ep_val:.2f} | EPA: {epa_val:+.2f}\n"
-            f"---------------------------------------------\n"
-            f"{wrapped_desc}"
         )
 
         sel.annotation.set_text(hover_text)

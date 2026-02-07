@@ -1,11 +1,11 @@
 ---
 # side-z67
 title: Implement Color Collision Logic
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-07T01:45:12Z
-updated_at: 2026-02-07T01:54:24Z
+updated_at: 2026-02-07T02:14:46Z
 parent: side-0mn
 ---
 
@@ -18,10 +18,10 @@ Add logic to detect if the primary colors of both teams are too similar. If they
 4. If home_primary and visitor_primary are below the threshold, switch visitor_color to visitor_secondary.
 
 ## Checklist
-- [ ] Implement hex-to-RGB conversion
-- [ ] Implement color distance comparison logic
-- [ ] Define similarity threshold
-- [ ] Implement fallback to secondary color for the visitor team
+- [x] Implement hex-to-RGB conversion
+- [x] Implement color distance comparison logic
+- [x] Define similarity threshold
+- [x] Implement fallback to secondary color for the visitor team
 
 ## Acceptance Criteria
 - Teams with identical or very similar primary colors are visually distinguishable on the graph.

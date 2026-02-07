@@ -1,11 +1,11 @@
 ---
 # side-0mn
 title: Change graph colors to match teams
-status: todo
+status: completed
 type: feature
 priority: normal
 created_at: 2026-02-07T01:28:43Z
-updated_at: 2026-02-07T01:53:22Z
+updated_at: 2026-02-07T02:16:09Z
 ---
 
 Currently, the graphs in @src/score_over_time.py default to red and blue colors. Instead, we want the colors to match those of each team.

@@ -8,6 +8,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import mplcursors
 
+from utils import get_team_colors_map, get_distinct_colors
+
 ### FUNCTIONS ###
 
 
@@ -153,6 +155,24 @@ def plot_scores(
 ):
     """Generates and displays (or saves) a plot of scores and net difference over time."""
 
+    # Fetch team colors
+    colors_map = get_team_colors_map()
+    home_team_colors = colors_map.get(home_team_name, {"primary": "blue", "secondary": "white"})
+    visitor_team_colors = colors_map.get(visitor_team_name, {"primary": "red", "secondary": "white"})
+
+    # Ensure colors are distinct (collision logic)
+    home_primary, visitor_primary = get_distinct_colors(home_team_colors, visitor_team_colors)
+
+    if debug:
+        print(f"DEBUG: {home_team_name} colors: {home_team_colors}")
+        print(f"DEBUG: {visitor_team_name} colors: {visitor_team_colors}")
+        if visitor_primary == visitor_team_colors["secondary"] and visitor_primary != visitor_team_colors["primary"]:
+             print(f"DEBUG: Color collision detected! Switched {visitor_team_name} to secondary color: {visitor_primary}")
+
+    # For plotting logic
+    home_colors = {"primary": home_primary}
+    visitor_colors = {"primary": visitor_primary}
+
     # Calculate pre-snap scores correctly using posteam_score/defteam_score
     # This avoids "double counting" on scoring plays where total_home_score includes the points.
     def get_presnap_home(row):
@@ -280,12 +300,12 @@ def plot_scores(
         pos_team, neg_team = home_team_name, visitor_team_name
         df["net_actual"] = df["preSnapHomeScore"] - df["preSnapVisitorScore"]
         df["net_expected"] = df["home_expected"] - df["visitor_expected"]
-        pos_color, neg_color = "blue", "red"
+        pos_color, neg_color = home_colors["primary"], visitor_colors["primary"]
     else:
         pos_team, neg_team = visitor_team_name, home_team_name
         df["net_actual"] = df["preSnapVisitorScore"] - df["preSnapHomeScore"]
         df["net_expected"] = df["visitor_expected"] - df["home_expected"]
-        pos_color, neg_color = "red", "blue"
+        pos_color, neg_color = visitor_colors["primary"], home_colors["primary"]
 
     # Create subplots with shared X axis and different height ratios
     # Top (ax1) is Net Difference (larger), Bottom (ax2) is Scores (smaller)
@@ -335,12 +355,21 @@ def plot_scores(
 
     # Plot play-by-play points for hover on Net Difference (ax1)
     plays_with_ep = df.dropna(subset=["expectedPoints"]).copy()
+    
+    # Assign colors to scatter points based on possession team
+    scatter_colors = [
+        home_colors["primary"] if team == home_team_name else (visitor_colors["primary"] if team == visitor_team_name else "purple")
+        for team in plays_with_ep["possessionTeam"]
+    ]
+
     sc_net = ax1.scatter(
         plays_with_ep["game_seconds_elapsed"],
         plays_with_ep["net_expected"],
-        color="purple",
-        s=10,
-        alpha=0.5,
+        color=scatter_colors,
+        s=15,
+        alpha=0.7,
+        edgecolors="white",
+        linewidths=0.5,
         label="_nolegend_",
     )
 
@@ -374,7 +403,7 @@ def plot_scores(
         df["preSnapHomeScore"],
         label=f"{home_team_name} Actual",
         where="post",
-        color="blue",
+        color=home_colors["primary"],
         alpha=0.3,
     )
     ax2.step(
@@ -382,7 +411,7 @@ def plot_scores(
         df["preSnapVisitorScore"],
         label=f"{visitor_team_name} Actual",
         where="post",
-        color="red",
+        color=visitor_colors["primary"],
         alpha=0.3,
     )
 
@@ -390,14 +419,14 @@ def plot_scores(
         df["game_seconds_elapsed"],
         df["home_expected"],
         label=f"{home_team_name} Expected",
-        color="blue",
+        color=home_colors["primary"],
         linewidth=2,
     )
     ax2.plot(
         df["game_seconds_elapsed"],
         df["visitor_expected"],
         label=f"{visitor_team_name} Expected",
-        color="red",
+        color=visitor_colors["primary"],
         linewidth=2,
     )
 

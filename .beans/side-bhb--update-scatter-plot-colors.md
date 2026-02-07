@@ -1,11 +1,11 @@
 ---
 # side-bhb
 title: Update Scatter Plot Colors
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-02-07T01:45:22Z
-updated_at: 2026-02-07T01:54:40Z
+updated_at: 2026-02-07T02:15:54Z
 parent: side-0mn
 ---
 
@@ -16,9 +16,9 @@ Set the points in the net difference graph to match the team colors, possibly ba
 2. If the play results in a positive expected change for the home team, use the home team color; otherwise, use the visitor team color.
 
 ## Checklist
-- [ ] Determine color logic for scatter points
-- [ ] Update ax1.scatter to use dynamic colors
-- [ ] Verify scatter points are distinguishable from the background fills
+- [x] Determine color logic for scatter points
+- [x] Update ax1.scatter to use dynamic colors
+- [x] Verify scatter points are distinguishable from the background fills
 
 ## Acceptance Criteria
 - Play markers (scatters) on the net difference graph reflect the team associated with the play or the current lead status.

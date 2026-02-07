@@ -1,11 +1,11 @@
 ---
 # side-thd
 title: Update hover text to be more informative and readable
-status: todo
+status: completed
 type: feature
 priority: normal
 created_at: 2026-02-07T01:31:53Z
-updated_at: 2026-02-07T01:53:47Z
+updated_at: 2026-02-07T02:12:19Z
 ---
 
 The hover text for each play needs changes to the layout, with more information.
@@ -16,9 +16,9 @@ The hover text for each play needs changes to the layout, with more information.
 3. Optimize the layout for readability and information density.
 
 ## Checklist
-- [ ] Extract Down, Distance, and Yardline (side-9c9)
-- [ ] Include Overall Game Score in Hover (side-rt9)
-- [ ] Implement Compact Hover Layout (side-v7j)
+- [x] Extract Down, Distance, and Yardline (side-9c9)
+- [x] Include Overall Game Score in Hover (side-rt9)
+- [x] Implement Compact Hover Layout (side-v7j)
 
 ## Acceptance Criteria
 - Hovering over a play marker displays: Down, Distance, Yardline, Running Score, EP, EPA, and Play Description.

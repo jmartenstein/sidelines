@@ -111,6 +111,9 @@ def test_plot_scores_smoke_test(mock_savefig, mock_show):
         "qtr": [1, 2],
         "posteam_score": [0, 7],  # Added
         "defteam_score": [0, 0],  # Added
+        "down": [1, 3],
+        "ydstogo": [10, 5],
+        "yrdln": ["KC 25", "DET 40"],
     }
     df = pd.DataFrame(data)
 

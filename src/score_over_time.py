@@ -366,10 +366,10 @@ def plot_scores(
         plays_with_ep["game_seconds_elapsed"],
         plays_with_ep["net_expected"],
         color=scatter_colors,
-        s=15,
-        alpha=0.7,
+        s=25, # Increased size from 15 to 25
+        alpha=0.8, # Slightly increased alpha for prominence
         edgecolors="white",
-        linewidths=0.5,
+        linewidths=0.7, # Slightly increased linewidth for prominence
         label="_nolegend_",
     )
 

@@ -7,39 +7,59 @@ This document outlines the proposed Command-Line Interface (CLI) for the `sideli
 The CLI must support the following core capabilities:
 1.  **Historical Analysis (Visual):** View the `score_over_time` plot of an existing NFL game.
 2.  **Historical Analysis (Text):** View the play-by-play text output of an existing NFL game.
-3.  **Simulation Statistics:** Gather aggregate statistics (win probability, score distributions) from 100+ Monte Carlo simulations.
-4.  **Roster Modifications:** Run simulations with modified rosters (e.g., simulating the impact of an injury or a mid-season trade).
+3.  **Historical Analysis (Text):** List the game id's for a team in a single season
+4.  **Simulation Statistics:** Gather aggregate statistics (win probability, score distributions) from 100+ Monte Carlo simulations.
 5.  **Simulation Inspection:** Read detailed play-by-play data for a specific iteration within a Monte Carlo batch.
 
 ---
 
 ## Proposed Interface: `sidelines`
 
-The interface follows a **Two-Pillar Architecture**, separating "Historical Truth" (`game`) from "Predictive Modeling" (`sim`).
+The interface follows a **Verb-Action Architecture**, prioritizing clear intent: find discovery (`find`), view facts (`view`), and model theories (`sim`).
 
-### 1. The `game` Subcommand
-Analyzes what **actually happened** in a historical game. Consolidates `play_by_play.py` and `score_over_time.py`.
+**Global Flags:**
+*   `--format <type>`, `-f <type>`: Sets the output format. Options: `text` (default), `plot`, `json`, `csv`.
+*   `--debug`: Enables detailed logging of data distribution and API calls.
+
+### 1. The `find` Subcommand
+Discovers historical game IDs for a specific team and season.
 
 **Usage:**
 ```bash
-sidelines game <game_id> [flags]
+sidelines find <team> <season> [flags]
 ```
 
-**Flags:**
-*   `--plot`, `-p`: Toggles from the default text-based play-by-play to a graphical score progression plot.
-*   `--output`, `-o <path>`: Saves the generated plot to a specific file (e.g., `graph.png`).
-*   `--debug`: Enables detailed logging of data distribution and API calls.
+**Positional Arguments:**
+*   `<team>`: The 3-letter team abbreviation (e.g., `KC`).
+*   `<season>`: The NFL season year (e.g., `2023`).
 
 **Examples:**
 ```bash
-# View text play-by-play
-sidelines game 2023_01_DET_KC
-
-# View graphical plot
-sidelines game 2023_01_DET_KC --plot
+# List all games for the Kansas City Chiefs in 2023
+sidelines find KC 2023
 ```
 
-### 2. The `sim` Subcommand
+### 2. The `view` Subcommand
+Analyzes what **actually happened** in a specific historical game.
+
+**Usage:**
+```bash
+sidelines view <game_id> [flags]
+```
+
+**Flags:**
+*   `--output`, `-o <path>`: Saves the generated output (e.g., a `.png` plot or `.json` file) to a specific path.
+
+**Examples:**
+```bash
+# View text play-by-play (default format)
+sidelines view 2023_01_DET_KC
+
+# View graphical plot
+sidelines view 2023_01_DET_KC --format plot
+```
+
+### 3. The `sim` Subcommand
 Models what **could have happened** using a Monte Carlo engine.
 
 **Usage:**
@@ -53,7 +73,6 @@ sidelines sim <game_id> [flags]
     *   `injure:Mahomes_P`: Removes a player from the active roster.
     *   `trade:Jefferson_J`: Adds a player from another team to the current roster.
 *   `--inspect <index>`: Displays the full text-based play-by-play for a specific simulation run (e.g., iteration #42).
-*   `--plot`: Generates a "simulation cone" plot showing the range of possible score outcomes vs. the actual game.
 *   `--seed <int>`: Sets a random seed for reproducibility.
 
 **Examples:**
@@ -61,8 +80,8 @@ sidelines sim <game_id> [flags]
 # Run 500 simulations with an injury scenario
 sidelines sim 2023_01_DET_KC -n 500 --modify "injure:Mahomes_P"
 
-# Inspect the PBP of the 10th simulation run
-sidelines sim 2023_01_DET_KC --inspect 10
+# View the simulation cone plot
+sidelines sim 2023_01_DET_KC --format plot
 ```
 
 ---
@@ -70,19 +89,22 @@ sidelines sim 2023_01_DET_KC --inspect 10
 ## Benefits & Challenges
 
 ### Key Benefits
-1.  **Logical Separation:** Creates a clear mental model: `game` for facts, `sim` for theories.
-2.  **Shared Infrastructure:** Both commands leverage the same data-fetching layer (DuckDB/Parquet) and Team Registry, ensuring high performance and data consistency.
-3.  **Extensible "What-If" Logic:** The `--modify` flag allows for complex scenario testing without cluttering the basic analysis commands.
-4.  **High Discoverability:** New users can explore capabilities via `sidelines --help` and drill down into advanced simulation flags as needed.
+1.  **Intent-Based Design:** The "Find → View → Sim" progression creates a natural workflow for the user.
+2.  **Positional Simplicity:** `find` is now extremely fast to type for the most common use case.
+3.  **Consistent Presentation:** The global `--format` flag ensures that switching between text, plots, and data exports works identically across all subcommands.
+4.  **Shared Infrastructure:** All subcommands leverage the same data-fetching layer (DuckDB/Parquet) and Team Registry, ensuring high performance and data consistency.
 
 ### Technical Challenges
-1.  **State Persistence:** Inspecting a specific simulation (`--inspect`) requires either saving massive amounts of temporary data or using strictly deterministic seeds to "re-play" a specific run on demand.
-2.  **Modification Syntax:** Defining a robust, string-based syntax for roster changes (`--modify "action:id"`) is difficult to make intuitive without a GUI.
-3.  **Visualization Ambiguity:** The `--plot` flag produces different types of charts in `game` vs. `sim`. Developers must ensure the visual language (colors, legends) remains consistent and clearly labeled to avoid confusion.
-4.  **Roster Data Integrity:** Accurate "What-If" simulations depend on high-quality player-level stats and depth charts, which adds a dependency on `nflreadpy.load_rosters`.
+1.  **Format Handling Logic:** Each subcommand must implement a handler for the global `--format` flag, even if certain formats (like `plot` for `find`) are not yet supported.
+2.  **Data Fetching Efficiency:** `nflreadpy.load_pbp` loads an entire season of data. For `find`, it is critical to use `load_schedules` to maintain responsiveness.
+3.  **State Persistence:** Inspecting a specific simulation (`--inspect`) requires either saving massive amounts of temporary data or using strictly deterministic seeds to "re-play" a specific run on demand.
+4.  **Visualization Ambiguity:** The `plot` format produces different types of charts in `view` vs. `sim`. Developers must ensure the visual language (colors, legends) remains consistent and clearly labeled to avoid confusion.
 
 ---
 
 ## Future Iterations
+*   **Interactive Selection:** After running `list`, allow users to pick a game by number or interactive prompt to see the plot.
+*   **Shell Completion:** Provide auto-completion for team abbreviations (`KC`, `DET`) and game IDs to speed up usage.
+*   **Interactive Referencing:** Enable `view` and `sim` to reference previous `find` results by numeric index (e.g., `view 1`) using a local state file or session history.
 *   **Interactive Mode:** Consider a REPL or interactive prompt for building complex roster modifications.
 *   **Export Formats:** Add `--json` or `--csv` flags to `sim` to allow external tools (Excel, Tableau) to ingest simulation results.

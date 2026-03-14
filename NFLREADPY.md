@@ -14,6 +14,16 @@ This document summarizes findings and data mapping for the `nflreadpy` library, 
 - **Returns**: A Polars DataFrame with game metadata, including final scores, team abbreviations, and game IDs.
 - **Performance**: Significantly faster than `load_pbp`. Use this for validation or retrieving game metadata (teams, scores, etc.) before loading detailed play data.
 
+### Loading Rosters
+- **Function**: `nflreadpy.load_rosters(seasons=[year])`
+- **Returns**: A Polars DataFrame containing team rosters, including player IDs, positions, and metadata.
+- **Usage Note**: Useful for mapping play-by-play participants to their physical attributes or depth chart positions.
+
+### Loading Team Metadata
+- **Function**: `nflreadpy.load_teams()`
+- **Returns**: A Polars DataFrame with official team abbreviations, names, and color codes.
+- **Usage**: Already utilized in `src/utils.py` to fetch team colors.
+
 ## Data Schema Mapping
 
 The following mapping translates field names from generic/Kaggle datasets to their equivalents in `nflreadpy`.

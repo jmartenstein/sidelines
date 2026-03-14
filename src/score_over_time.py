@@ -173,100 +173,26 @@ def plot_scores(
     home_colors = {"primary": home_primary}
     visitor_colors = {"primary": visitor_primary}
 
-    # Calculate pre-snap scores correctly using posteam_score/defteam_score
-    # This avoids "double counting" on scoring plays where total_home_score includes the points.
-    def get_presnap_home(row):
-        """
-        Calculates the home team's score at the snap of the current play.
-
-        This function determines the score of the home team *before* the current play
-        commences, which is crucial for accurately tracking score progression without
-        "double counting" points that might be scored *on* the current play. It
-        leverages `posteam_score` and `defteam_score` from the `nflreadpy` data.
-
-        Parameters:
-            row (pd.Series): A row from the play-by-play DataFrame, containing
-                             play-specific information. Key columns used are:
-                             - 'posteam' (str): Abbreviation of the team with possession.
-                             - 'posteam_score' (int): Score of the team with possession.
-                             - 'defteam_score' (int): Score of the defensive team.
-                             - 'total_home_score' (int): Cumulative home score (includes
-                                                        points from current play if scoring).
-                             - `home_team_name` (str, from outer scope): The home team's
-                                                                      abbreviation for the game.
-
-        Returns:
-            int: The calculated pre-snap home team score. Returns `total_home_score`
-                 as a fallback if `posteam` or `posteam_score` is not available,
-                 or for non-play events like timeouts. Defaults to 0 if the fallback
-                 score is also not available (e.g., NaN).
-        """
-        # If posteam matches home, return posteam_score
-        if pd.notna(row["posteam"]) and pd.notna(row["posteam_score"]):
-            if row["posteam"] == home_team_name:
-                return row["posteam_score"]
-            elif row["posteam"] == visitor_team_name:
-                return row["defteam_score"]
-        # Fallback for timeouts, end of quarter, or missing data. Ensure a numeric return.
-        return row["total_home_score"] if pd.notna(row["total_home_score"]) else 0
-
-    def get_presnap_visitor(row):
-        """
-        Calculates the visitor team's score at the snap of the current play.
-
-        This function determines the score of the visitor team *before* the current play
-        commences, which is crucial for accurately tracking score progression without
-        "double counting" points that might be scored *on* the current play. It
-        leverages `posteam_score` and `defteam_score` from the `nflreadpy` data.
-
-        Parameters:
-            row (pd.Series): A row from the play-by-play DataFrame, containing
-                             play-specific information. Key columns used are:
-                             - 'posteam' (str): Abbreviation of the team with possession.
-                             - 'posteam_score' (int): Score of the team with possession.
-                             - 'defteam_score' (int): Score of the defensive team.
-                             - 'total_away_score' (int): Cumulative away score (includes
-                                                        points from current play if scoring).
-                             - `visitor_team_name` (str, from outer scope): The visitor team's
-                                                                        abbreviation for the game.
-
-        Returns:
-            int: The calculated pre-snap visitor team score. Returns `total_away_score`
-                 as a fallback if `posteam` or `posteam_score` is not available,
-                 or for non-play events like timeouts. Defaults to 0 if the fallback
-                 score is also not available (e.g., NaN).
-        """
-        # If posteam matches visitor, return posteam_score
-        if pd.notna(row["posteam"]) and pd.notna(row["posteam_score"]):
-            if row["posteam"] == visitor_team_name:
-                return row["posteam_score"]
-            elif row["posteam"] == home_team_name:
-                return row["defteam_score"]
-        # Fallback for timeouts, end of quarter, or missing data. Ensure a numeric return.
-        return row["total_away_score"] if pd.notna(row["total_away_score"]) else 0
-
-    df["preSnapHomeScore"] = df.apply(get_presnap_home, axis=1)
-    df["preSnapVisitorScore"] = df.apply(get_presnap_visitor, axis=1)
+    # Use the score from the previous play as the pre-snap score for the current play.
+    # nflreadpy's total_home_score/total_away_score are POST-play totals.
+    df["preSnapHomeScore"] = df["total_home_score"].shift(1).ffill().fillna(0).astype(int)
+    df["preSnapVisitorScore"] = df["total_away_score"].shift(1).ffill().fillna(0).astype(int)
 
     # Rename columns for consistency with the original script's logic
     df = df.rename(
         columns={
-            # "total_home_score": "preSnapHomeScore", # Now calculated above
-            # "total_away_score": "preSnapVisitorScore", # Now calculated above
             "ep": "expectedPoints",
             "epa": "expectedPointsAdded",
             "posteam": "possessionTeam",
-            "qtr": "quarter",  # Rename 'qtr' to 'quarter' for consistency
+            "qtr": "quarter",
             "down": "down",
             "ydstogo": "yardsToGo",
             "yrdln": "yardline",
-            # 'game_seconds_remaining' is already used as 'gameClock_seconds' in original plot_scores if needed directly, but we use game_seconds_elapsed
         }
     )
 
-    # Ensure that the team names used for comparison are consistent.
-    # The `home_team_name` and `visitor_team_name` are expected to be abbreviations.
-    # `df['possessionTeam']` should match these if `nflreadpy` data is filtered correctly.
+    # Forward fill possessionTeam to handle timeouts or other plays without a posteam.
+    df["possessionTeam"] = df["possessionTeam"].ffill()
 
     # Calculate Expected Scores
     df["home_expected"] = df.apply(
@@ -279,6 +205,11 @@ def plot_scores(
         + (row["expectedPoints"] if row["possessionTeam"] == visitor_team_name else 0),
         axis=1,
     )
+
+    # Forward fill expected scores to avoid dips during timeouts or possession changes
+    # where expectedPoints might be NaN or the possessionTeam is None.
+    df["home_expected"] = df["home_expected"].ffill()
+    df["visitor_expected"] = df["visitor_expected"].ffill()
 
     if debug:
         print("\n--- DEBUG INFO: Data Distribution ---")
@@ -371,7 +302,7 @@ def plot_scores(
         df["game_seconds_elapsed"],
         df["net_actual"],
         label="Actual Diff",
-        where="post",
+        where="pre",
         color="black",
         alpha=0.2,
     )
@@ -476,7 +407,7 @@ def plot_scores(
         df["game_seconds_elapsed"],
         df["preSnapHomeScore"],
         label=f"{home_team_name} Actual",
-        where="post",
+        where="pre",
         color=home_colors["primary"],
         alpha=0.3,
     )
@@ -484,7 +415,7 @@ def plot_scores(
         df["game_seconds_elapsed"],
         df["preSnapVisitorScore"],
         label=f"{visitor_team_name} Actual",
-        where="post",
+        where="pre",
         color=visitor_colors["primary"],
         alpha=0.3,
     )

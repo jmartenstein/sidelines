@@ -24,10 +24,10 @@ The following mapping translates field names from generic/Kaggle datasets to the
 | Play Description | `desc` | String | Text description of the play |
 | Time Remaining | `game_seconds_remaining` | Float | Total seconds remaining in the game. |
 | Quarter | `qtr` | Float | Current quarter (1-4, 5 for OT). |
-| Home Score (Running) | `total_home_score` | Int | Pre-snap home score. |
-| Away Score (Running) | `total_away_score` | Int | Pre-snap away score. |
+| Home Score (Running) | `total_home_score` | Int | Post-play home score. |
+| Away Score (Running) | `total_away_score` | Int | Post-play away score. |
 | Expected Points | `ep` | Float | Expected points added/value. |
-| Possession Team | `posteam` | String | Abbreviation of the team with possession. |
+| Possession Team | `posteam` | String | Abbreviation of the team with possession. (Note: Can be null during timeouts/metadata rows; use forward-fill for continuity). |
 | Home Team | `home_team` | String | Abbreviation (found in Schedule & PBP). |
 | Away Team | `away_team` | String | Abbreviation (found in Schedule & PBP). |
 | Home Final Score | `home_score` | Int | Found in Schedule metadata. |
@@ -35,6 +35,14 @@ The following mapping translates field names from generic/Kaggle datasets to the
 
 ### Derived Metrics
 - **Game Seconds Elapsed**: `(qtr - 1) * 900 + (900 - game_seconds_remaining)` (Assuming 900s quarters).
+
+## Handling Missing Data
+
+Certain fields in the PBP data may contain `null` or `NaN` values during non-play events (e.g., timeouts, quarter breaks, penalties). To ensure visual continuity in plots and accurate metric calculation:
+
+1. **Possession Team (`posteam`)**: Often missing during timeouts. Use forward-fill (`ffill()`) to maintain the context of which team was last in possession for scatter plot coloring and "Expected" lead calculations.
+2. **Expected Points (`ep`)**: Can be missing on bridge rows. Use forward-fill on derived "Expected" score columns to prevent artificial "dips" in the graph.
+3. **Running Scores (`total_home_score` / `total_away_score`)**: These are **post-play** totals. To get **pre-snap** scores, shift the columns by 1 and forward-fill.
 
 ## Common Patterns & Best Practices
 

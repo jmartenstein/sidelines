@@ -6,3 +6,4 @@ mplcursors
 black
 pylint
 pytest
+plotly

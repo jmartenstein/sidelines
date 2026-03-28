@@ -57,3 +57,24 @@ python3 src/scout.py
 
 ### Data Sources
 Full references and publication dates are maintained in the interactive footer of the generated graph and in `src/mock_draft_data.py`.
+
+
+## Improving Data Sourcing
+
+As mentioned above, there are issues with some data discrepancies, especially when pulling from The Ringer website. Given this, I propose streamlining the data sourcing to use a single website: nflmockdraftdatabase.com. This way, we can write a consistent sourcing script that uses the same formatting for scraping website data, and this should reduce data discrepancies.
+
+Here is a list of mock drafts to start with, from nflmockdraftdatabase.com
+
+[Bucky Brooks @ NFL.com](https://www.nflmockdraftdatabase.com/mock-drafts/2026/nfl-com-2026-bucky-brooks?date=2026-03-24)
+
+[Field Yates @ espn.com](https://www.nflmockdraftdatabase.com/mock-drafts/2026/espn-2026-field-yates?date=2026-03-24)
+
+[Todd McShay @ The McShay Report](https://www.nflmockdraftdatabase.com/mock-drafts/2026/the-mcshay-report-2026-todd-mcshay?date=2026-03-23)
+
+[Staff @ A to Z Sports](https://www.nflmockdraftdatabase.com/mock-drafts/2026/a-to-z-sports-2026?date=2026-03-20)
+
+[Staff @ Bleacher Report](https://www.nflmockdraftdatabase.com/mock-drafts/2026/bleacher-report-2026?date=2026-03-19)
+
+[Staff @ The Athletic](https://www.nflmockdraftdatabase.com/mock-drafts/2026/the-athletic-2026?date=2026-03-19)
+
+[Mel Kiper Jr. @ ESPN](https://www.nflmockdraftdatabase.com/mock-drafts/2026/espn-2026-mel-kiper-jr?date=2026-03-17)
